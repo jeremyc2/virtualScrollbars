@@ -1,0 +1,143 @@
+<style>
+    ::-webkit-scrollbar {
+        width: 20px;
+    }
+    #second::-webkit-scrollbar {
+        width: 0px;
+        display: none;
+    }
+    ::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: #d6dee1;
+        border-radius: 20px;
+        border: 6px solid transparent;
+        background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: #a8bbbf;
+    }
+    body {
+        margin: 0 auto;
+        max-width: min(500px, 50%);
+    }
+    body > div {
+        height: calc(50vh - 10px);
+        background-color: black;
+        border: solid black 1px;
+        overflow-y: scroll;
+        position: relative;
+    }
+    div > div:not(.scrollbar) {
+        height: 100vh;
+        overflow: hidden;
+        background: linear-gradient(red, orange, yellow, green, blue, indigo, violet);
+    }
+
+    /* THE IMPORTANT STUFF */
+    .scrollbar {
+        position: absolute;
+        height: 100%;
+        width: 20px;
+        top: 0;
+        right: 0;
+    }
+    .scrollbar > div {
+        height: calc(100% - 9px) !important;
+        box-sizing: border-box;
+        border-radius: 20px;
+        border: 4.5px solid transparent;
+        margin: 5px;
+        background: #d6dee1 !important;
+        display: none;
+    }
+    .scrollbar > div:hover {
+        background-color: #a8bbbf !important;
+    }
+</style>
+<div style="margin-bottom: 10px;">
+    <div></div>
+</div>
+<div id="second">
+    <div></div>
+    <div class="scrollbar"></div>
+</div>
+<script>
+var scrollbar = document.querySelector(".scrollbar");
+controlVirtualScrollbar(scrollbar);
+function controlVirtualScrollbar(scrollbar) {
+    var container = scrollbar.parentElement;
+    var height = container.getBoundingClientRect().height;
+
+    scrollbar.appendChild(document.createElement("div"));
+
+    scrollbar.style.height = 
+        height * (height / container.scrollHeight);
+
+    scrollbar.parentElement.addEventListener("mouseenter", function(e) {
+        scrollbar.firstElementChild.style.display = "block";
+        e.target.addEventListener("mouseleave", function() {
+            scrollbar.firstElementChild.style.display = "none";
+        });
+    });
+
+    container.addEventListener("scroll", function() {
+        var adjustedHeight = container.scrollHeight - height;
+        var adjustedScrollHeight = height - scrollbar.getBoundingClientRect().height;
+
+        var scrollPercent = container.scrollTop / adjustedHeight;
+        scrollPercent = scrollPercent > 1? 1: scrollPercent;
+
+        var newOffset = container.scrollTop + scrollPercent * adjustedScrollHeight;
+        if(newOffset > container.scrollHeight - scrollbar.getBoundingClientRect().height) {
+            scrollbar.style.top = container.scrollHeight - scrollbar.getBoundingClientRect().height;
+        } else {
+            scrollbar.style.top = container.scrollTop + scrollPercent * adjustedScrollHeight;
+        }
+    });
+
+    scrollbar.addEventListener("mousedown", function(e) {
+        var y = e.screenY,
+            oldScrollTop = container.scrollTop,
+            oldScrollOffset = scrollbar.offsetTop;
+        
+        function updateScroll(e) {
+
+            scrollbar.firstElementChild.style.display = "block";
+
+            var deltaY = e.screenY - y,
+                scrollRatio = deltaY * container.scrollHeight / height,
+                newScrollTop = oldScrollTop + scrollRatio,
+                newScrollOffset = oldScrollOffset + deltaY + scrollRatio;
+
+            if(newScrollOffset < 0) {
+                container.scrollTop = 0;
+                scrollbar.style.top = 0;
+            } else if(newScrollOffset > container.scrollHeight - scrollbar.getBoundingClientRect().height) {
+                container.scrollTop = container.scrollHeight - scrollbar.getBoundingClientRect().height;
+                scrollbar.style.top = container.scrollHeight - scrollbar.getBoundingClientRect().height;  
+            } else {
+                container.scrollTop = newScrollTop;
+                scrollbar.style.top = newScrollOffset;
+            }
+
+        }
+
+        document.addEventListener("mousemove", updateScroll);
+
+        document.addEventListener("mouseup", function(e) {
+            if(e.path.includes(container)) {
+                scrollbar.firstElementChild.style.display = "block";
+            } else {
+                scrollbar.firstElementChild.style.display = "none";
+            }
+            document.removeEventListener("mousemove", updateScroll);
+        });
+
+        e.preventDefault();
+        
+    });
+}
+</script>
